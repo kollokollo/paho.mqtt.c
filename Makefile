@@ -23,6 +23,9 @@
 SHELL = /bin/sh
 .PHONY: clean, mkdir, install, uninstall, html
 
+# dodeb=true
+
+
 ifndef release.version
   release.version = 1.3.1
 endif
@@ -65,6 +68,11 @@ endif
 ifndef prefix
 	prefix = /usr/local
 endif
+
+ifdef dodeb
+	prefix = /usr
+endif
+
 
 ifndef exec_prefix
 	exec_prefix = ${prefix}
@@ -336,6 +344,43 @@ uninstall:
 	
 	- rm $(DESTDIR)${man3dir}/MQTTClient.h.3
 	- rm $(DESTDIR)${man3dir}/MQTTAsync.h.3
+
+##########################################################
+# make a simple debian package with checkinstall MH 2020
+#
+
+DEBNAME= paho.mqtt.c
+LIBNO=   ${VERSION}
+RELEASE= 1
+
+DEBDOC=	LICENSE README.md CODE_OF_CONDUCT.md notice.html
+
+doc-pak: $(DEBDOC)
+	mkdir -p $@
+	cp $(DEBDOC) $@/
+#	cp Debian/changelog.Debian $@/
+#	gzip -9 $@/changelog.Debian
+#	cp Debian/copyright $@/
+
+deb :	build doc-pak description-pak
+	sudo checkinstall -D --pkgname $(DEBNAME) --pkgversion $(LIBNO) \
+	--pkgrelease $(RELEASE)  \
+	--maintainer "kollo@users.sourceforge.net" \
+        --requires libc6,openssl \
+	--backup  \
+	--pkggroup mqtt   \
+	--pkglicense GPL --strip=yes --stripso=yes --reset-uids 
+	rm -f backup-*.tgz
+	sudo chown 1000 $(DEBNAME)_$(LIBNO)-$(RELEASE)_*.deb
+	mkdir -p Debian/Outputs/
+	mv $(DEBNAME)_$(LIBNO)-$(RELEASE)_*.deb Debian/Outputs/
+
+
+
+
+
+##########################################################
+
 
 REGEX_DOXYGEN := \
     's;@PROJECT_SOURCE_DIR@/src/\?;;' \
